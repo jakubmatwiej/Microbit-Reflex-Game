@@ -1,0 +1,15 @@
+
+# Prywatne klucze Firebase
+serviceAccountKey.json
+*firebase-adminsdk*.json
+
+# Zmienne srodowiskowe
+.env
+.env.*
+
+# Pliki tymczasowe Pythona
+__pycache__/
+*.pyc
+
+# Srodowisko wirtualne
+.venv/
