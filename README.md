@@ -1,115 +1,171 @@
-# Microbit-Reflex-Game
-Gra zręcznościowa na Micro:bit z rankingiem online
-1. Micro- gra zręcznościowa
-Stworzenie prostej gry polegającej na pomiarze czasu reakcji gracza. Po pojawieniu się sygnału na wyświetlaczu LED gracz naciska odpowiedni przycisk. Urządzenie oblicza wynik i przesyła go wraz z identyfikatorem gracza przez USB do komputera.
+# Microbit Reflex Game
 
-2. Python- komunikacja
-Program Python odbiera dane z Micro przez USB i przesyła je przez internet do bazy Firebase. Odpowiada również za pobieranie rankingu i przekazywanie go do drugiego Micro.
+## 1. Cel projektu
 
-3. Firebase- baza danych
-Przechowywanie identyfikatorów graczy, zdobytych punktów oraz dat rozgrywek. Dane pozostają dostępne online niezależnie od działania urządzeń.
+Realizuję indywidualny projekt prostej gry zręcznościowej na platformie BBC Micro:bit, polegającej na pomiarze czasu reakcji gracza.
 
-4. Strona internetowa- ranking
-Prosta strona wykonana w HTML, CSS i JavaScript, która pobiera wyniki z Firebase i wyświetla ranking graczy. Strona będzie dostępna przez publiczny adres WWW.
+Po pojawieniu się sygnału na wyświetlaczu LED użytkownik będzie musiał jak najszybciej nacisnąć odpowiedni przycisk. Na podstawie czasu reakcji zostanie obliczony wynik.
 
-5. Drugi Micro- wyświetlanie rankingu
-Drugie urządzenie podłączone przez USB do komputera będzie wyświetlało najlepsze wyniki pobrane z bazy danych.
+Wynik wraz z identyfikatorem gracza będzie przesyłany bezprzewodowo do systemu wykładowcy, a następnie zapisywany w internetowej bazie danych. Docelowo wyniki będą dostępne na stronie WWW w postaci rankingu.
 
-6. GitHub- dokumentacja projektu
-Repozytorium zawierające kod źródłowy, strukturę projektu, opis działania oraz instrukcję uruchomienia.
-Schemat połączeń:
+## 2. Architektura systemu
 
-Micro (gra)- USB- Python- Internet- Firebase
+Projekt składa się z następujących elementów:
 
-Firebase- Strona WWW (ranking online)
+**1. Micro:bit – gra zręcznościowa**
 
-Firebase- Python- USB- Micro (ranking fizyczny)
+Micro:bit będzie odpowiadał za obsługę gry, pomiar czasu reakcji, obliczanie wyniku oraz przygotowanie wiadomości zawierającej identyfikator użytkownika, wynik i adres API.
 
-Wykorzystane technologie: Micro, Microsoft MakeCode, Python, Firebase, HTML, CSS, JavaScript, GitHub.
+**2. Micro:bit wykładowcy – brama komunikacyjna**
 
+Wyniki będą przesyłane radiowo na grupie 67 do Micro:bita wykładowcy, który będzie podłączony do jego komputera przez USB.
 
-# Założenia techniczne i komunikacja
+**3. Komputer wykładowcy**
 
-1. Dane wyjściowe z Micro
+Komputer odbierze wiadomość z bramy, przekształci ją do formatu JSON i prześle metodą HTTP POST pod adres mojego API.
 
-W mojej grze Micro będzie odpowiadał za pomiar czasu reakcji użytkownika i obliczanie wyniku. Po zakończeniu rozgrywki urządzenie przygotuje dane zawierające identyfikator gracza, identyfikator rozgrywki oraz uzyskany wynik.
+**4. REST API – Python FastAPI**
 
-2. Komunikacja radiowa
+Moje API odpowiada za odbieranie wyników, sprawdzanie danych oraz przekazywanie ich do bazy Firebase.
 
-Do przesyłania wyników wykorzystam wbudowany moduł radiowy Micro. Dane będą wysyłane bezprzewodowo do Micro wykładowcy. Format wiadomości, parametry komunikacji oraz sposób kodowania lub szyfrowania dostosuję do wspólnego standardu, który zostanie ustalony podczas zajęć.
+**5. Firebase Realtime Database**
 
-3. Brama komunikacyjna
+Internetowa baza danych przechowuje identyfikatory graczy, uzyskane wyniki oraz daty i godziny zapisów.
 
-Micro podłączony do komputera wykładowcy będzie pełnił funkcję bramy komunikacyjnej. Będzie odbierał wyniki przesyłane radiowo, a następnie przekazywał je przez USB do komputera wykładowcy.
+**6. Strona internetowa**
 
-4. Przesyłanie danych przez internet
+Docelowo przygotuję stronę WWW w HTML, CSS i JavaScript, która będzie wyświetlała ranking graczy.
 
-Zakładam, że dane z komputera wykładowcy będą przekazywane do mojego API za pomocą protokołu HTTPS w formacie JSON. Dokładny sposób integracji zostanie dostosowany do uzgodnionego standardu.
+Nie planuję rankingu na dodatkowym urządzeniu fizycznym, ponieważ jest opcjonalny.
 
-5. API
+## 3. Standard komunikacji
 
-Do stworzenia własnego REST API zamierzam wykorzystać Python i framework FastAPI.
+### Wiadomość wejściowa – String
 
-API będzie udostępniało dwa podstawowe endpointy:
+Zgodnie ze standardem ustalonym przez wykładowcę Micro:bit będzie wysyłał wiadomość:
 
-POST /results – przyjmowanie i zapisywanie wyników.
+`id:<wartość>;wynik:<wartość>;adresAPI:<wartość>`
 
-GET /ranking – pobieranie rankingu graczy.
+Przykład:
 
-6. Sposób zapisu danych w bazie
+`id:001;wynik:950;adresAPI:https://microbit-reflex-game.vercel.app/results`
 
-Do przechowywania wyników wykorzystam Firebase Realtime Database. Każda rozgrywka będzie zapisywana jako osobny rekord w formacie JSON.
+Komunikacja radiowa będzie wykorzystywać grupę **67**, bez dodatkowego szyfrowania wiadomości.
 
-Proponowana struktura danych:
+### Wiadomość HTTP POST – JSON
 
-Pole
+Komputer wykładowcy będzie wysyłał do mojego API obiekt:
 
-Typ
+```json
+{
+  "id": "001",
+  "wynik": 950
+}
+```
 
-Znaczenie
+Adres endpointu:
 
-game_id
+`https://microbit-reflex-game.vercel.app/results`
 
-String
+## 4. API
 
-Identyfikator rozgrywki
+API przygotowałem w Pythonie z wykorzystaniem frameworka FastAPI.
 
-player_id
+Aktualnie zaimplementowałem:
 
-String
+- **GET /** – sprawdzenie działania API.
+- **POST /results** – przyjmowanie i zapisywanie wyników w Firebase.
 
-Identyfikator gracza
+Docelowo dodam:
 
-score
+- **GET /ranking** – pobieranie rankingu graczy.
 
-Integer
+API zostało opublikowane na platformie Vercel.
 
-Uzyskany wynik
+**Adres usługi:**
 
-timestamp
+https://microbit-reflex-game.vercel.app/
 
-String
+**Dokumentacja Swagger UI:**
 
-Data i godzina zapisu
+https://microbit-reflex-game.vercel.app/docs
 
-Datę i godzinę zapisu będzie automatycznie dodawał serwer.
+## 5. Sposób zapisu danych w bazie
 
-7. Ranking internetowy
+Do przechowywania wyników wykorzystuję Firebase Realtime Database.
 
-Stworzę prostą stronę internetową wykorzystującą HTML, CSS i JavaScript. Strona będzie pobierała wyniki przez moje API i wyświetlała ranking graczy posortowany od najwyższego wyniku.
+Każda rozgrywka jest zapisywana jako osobny rekord zawierający trzy pola:
 
-Ranking będzie dostępny przez publiczny adres internetowy.
+| Pole | Typ danych | Znaczenie |
+|---|---|---|
+| id | String | Identyfikator gracza |
+| wynik | Integer | Uzyskany wynik |
+| data | String | Data i godzina zapisu |
 
-8. Niezależność poszczególnych elementów
+Datę i godzinę automatycznie dodaje API.
 
-Zamierzam zaprojektować system w taki sposób, aby gra, API, baza danych i strona internetowa mogły działać jako niezależne elementy.
+Firebase generuje również unikalny klucz dla każdego rekordu, dzięki czemu jeden użytkownik może mieć wiele zapisanych wyników.
 
-Dzięki wykorzystaniu wspólnego standardu komunikacji będę mógł przesyłać wyniki do systemu wykładowcy bez konieczności fizycznego podłączania mojego Micro do jego komputera.
+## 6. Ranking internetowy
 
-9. Dokumentacja projektu
+W kolejnym etapie przygotuję prostą stronę internetową w HTML, CSS i JavaScript.
 
-Kod źródłowy, dokumentację techniczną, opis architektury oraz instrukcję uruchomienia będę przechowywał w repozytorium GitHub.
+Strona będzie pobierała wyniki z API i wyświetlała je w formie rankingu, uporządkowanego od najwyższego wyniku.
 
-10. Aktualny status
+Ranking będzie dostępny przez publiczny adres WWW.
 
-Obecnie opracowuję koncepcję i architekturę rozwiązania. Standard komunikacji radiowej oraz szczegóły integracji z systemem wykładowcy pozostają do ustalenia.
+## 7. Diagram architektury C4
+
+Przygotowałem model architektury systemu w diagrams.net, obejmujący cztery poziomy:
+
+- C1 – kontekst systemu.
+- C2 – kontenery i komunikacja.
+- C3 – komponenty API.
+- C4 – planowana struktura kodu.
+
+[Diagram C4 – plik edytowalny](https://github.com/jakubmatwiej/Microbit-Reflex-Game/blob/main/Microbit-Reflex-Game-C4-komplet.drawio)
+
+## 8. Wykorzystane technologie
+
+- BBC Micro:bit
+- Microsoft MakeCode
+- Python
+- FastAPI
+- Firebase Realtime Database
+- HTTP / HTTPS / JSON
+- Vercel
+- HTML, CSS, JavaScript
+- GitHub
+- diagrams.net
+
+## 9. Aktualny postęp projektu
+
+**Zrealizowane:**
+
+- Opracowanie koncepcji i architektury systemu.
+- Przygotowanie diagramów C4.
+- Utworzenie repozytorium GitHub.
+- Konfiguracja środowiska Python i FastAPI.
+- Implementacja endpointu POST /results.
+- Utworzenie bazy Firebase Realtime Database.
+- Połączenie API z bazą danych.
+- Automatyczne dodawanie daty i godziny zapisu.
+- Publikacja API na Vercel.
+- Przetestowanie publicznego endpointu HTTP POST – odpowiedź 200 OK.
+
+**Pozostało do wykonania:**
+
+- Implementacja endpointu GET /ranking.
+- Przygotowanie strony WWW z rankingiem.
+- Programowanie gry w Microsoft MakeCode.
+- Wysyłanie wiadomości radiowych na grupie 67.
+- Integracja z bramą wykładowcy.
+- Testy końcowe całego systemu.
+
+## 10. Aktualny status
+
+Aktualnie mam działające, publicznie dostępne API połączone z internetową bazą Firebase. Przeprowadziłem pomyślny test przesłania danych JSON metodą HTTP POST i zapisu wyniku w bazie danych.
+
+Pozostałe elementy projektu będę rozwijał w kolejnych etapach.
+
+Mechanizm uwierzytelniania żądań API pozostaje do ustalenia. Obecny endpoint zapisu ma charakter testowy.
